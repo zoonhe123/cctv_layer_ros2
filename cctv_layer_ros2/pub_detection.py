@@ -29,6 +29,7 @@ class PubDetection(Node):
         # 이전 위치 저장용 딕셔너리: { 'walking_human_1': (x, y, t) }
         self.prev_positions = {}
         self.time_prev = None
+        self.vel_filtered_prev = None
 
     def model_states_callback(self, msg: ModelStates):
 
@@ -79,11 +80,21 @@ class PubDetection(Node):
                 pose_msg = Pose()
                 pose_msg.position.x = x
                 pose_msg.position.y = y
+                pose_msg.orientation.x = msg.pose[i].orientation.x
+                pose_msg.orientation.y = msg.pose[i].orientation.y
+                pose_msg.orientation.z = msg.pose[i].orientation.z
+                pose_msg.orientation.w = msg.pose[i].orientation.w
                 detection_msg.pose = pose_msg
 
                 vel_msg = Vector3()
                 vel_msg.x = vx
                 vel_msg.y = vy
+                if self.vel_filtered_prev == None:
+                    vel_msg.z = math.sqrt(vx**2 + vy**2)
+                    self.vel_filtered_prev = math.sqrt(vx**2 + vy**2)
+                else:
+                    vel_msg.z = 0.9*math.sqrt(vx**2 + vy**2) + 0.1*self.vel_filtered_prev
+                    self.vel_filtered_prev = vel_msg.z
                 detection_msg.vel = vel_msg
 
                 detections.append(detection_msg)
